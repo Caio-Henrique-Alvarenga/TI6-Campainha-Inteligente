@@ -1,9 +1,14 @@
+from __future__ import absolute_import
 from flask import Flask, request, jsonify
 import cv2
 from deepface import DeepFace
 import os
+import asyncio
+from celery import Celery
+import tensorflow as tf
 
 app = Flask(__name__)
+celery = Celery(app.name, broker='amqp://guest@localhost//')
 
 # Banco de dados simulado para pessoas cadastradas
 pessoas_cadastradas = [
@@ -31,9 +36,25 @@ def register_person():
         return jsonify({"message": "Pessoa registrada com sucesso!"}), 201
     else:
         return jsonify({"message": "Dados incompletos"}), 400
+    
+
+@celery.task
+def recognize_person(img_path):
+    # Ensure TensorFlow uses the GPU
+    tf.config.experimental.set_memory_growth(True)
+    tf.config.experimental.set_virtual_device_configuration(
+        tf.config.experimental.VirtualDeviceConfiguration(
+            memory_limit=4096  # Adjust the memory limit as needed
+        )
+    )
+
+    # Perform GPU-accelerated task here
+    with tf.device('/gpu:0'):  # Specify the GPU device
+        result = DeepFace.verify(img1_path=pessoa['img_ref'], img2_path=img_path)
+    return result
 
 @app.route('/recognize', methods=['POST'])
-def recognize_person():
+def recognize_person_view():
     if 'img' not in request.files:
         return jsonify({"message": "Imagem não encontrada no request"}), 400
 
@@ -50,8 +71,8 @@ def recognize_person():
             break
 
     if recognized_person:
-        print('pessoa: ')
-        print(recognized_person)
+        #print('pessoa: ')
+        #print(recognized_person)
         return jsonify({
             "nome": recognized_person['nome'],
             "status": recognized_person['status']            
@@ -65,4 +86,4 @@ def recognize_person():
 if __name__ == '__main__':
     os.makedirs('known_faces', exist_ok=True)
     os.makedirs('input_imgs', exist_ok=True)
-    app.run(host='0.0.0.0', port=5000)
+    asyncio.run(app.run(host='0.0.0.0', port=5000, threaded=True, processes=1))
