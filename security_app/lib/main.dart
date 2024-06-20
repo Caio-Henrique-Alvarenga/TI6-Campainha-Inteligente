@@ -52,9 +52,9 @@ class _ImagePickerScreenState extends State<ImagePickerScreen> {
   }
 
   Future<void> _uploadImage(File image) async {
-    final url = Uri.parse('http://127.0.0.1:5000/recognize');
+    final url = Uri.parse('http://192.168.1.10:5000/recognize');
     final request = http.MultipartRequest('POST', url)
-      ..files.add(await http.MultipartFile.fromPath('img', image.path));  // Mudança aqui
+      ..files.add(await http.MultipartFile.fromPath('img', image.path));
 
     final response = await request.send();
 
@@ -64,7 +64,7 @@ class _ImagePickerScreenState extends State<ImagePickerScreen> {
 
       if (jsonResponse['status'] == 'morador') {
         _showMoradorDialog(jsonResponse['nome']);
-      } else if (jsonResponse['status'] == 'visitante') {
+      } else if (jsonResponse['status'] == 'conhecido') {
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -90,36 +90,6 @@ class _ImagePickerScreenState extends State<ImagePickerScreen> {
   }
 
 
-  void _simulateApiResponse(String status, String name) {
-    if (_image == null) {
-      // Usar uma imagem padrão para fins de simulação
-      _image = File('path_to_default_image/default.jpg');
-    }
-
-    if (status == 'morador') {
-      _showMoradorDialog(name);
-    } else if (status == 'conhecido') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => KnownPersonScreen(
-            image: _image!,
-            name: name,
-          ),
-        ),
-      );
-    } else if (status == 'desconhecido') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => UnknownPersonScreen(
-            image: _image!,
-          ),
-        ),
-      );
-    }
-  }
-
   void _showMoradorDialog(String name) {
     showDialog(
       context: context,
@@ -135,11 +105,13 @@ class _ImagePickerScreenState extends State<ImagePickerScreen> {
     );
   }
 
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Upload de Imagem'),
+        title: Text('Campainha Inteligente'),
       ),
       body: Center(
         child: Column(
@@ -159,20 +131,6 @@ class _ImagePickerScreenState extends State<ImagePickerScreen> {
               child: Text('Selecionar Imagem'),
             ),
             SizedBox(height: 20),
-            /*ElevatedButton(
-              onPressed: () => _simulateApiResponse('morador', 'Fulano'),
-              child: Text('Simular Morador'),
-            ),
-            SizedBox(height: 10), // Espaçamento adicionado
-            ElevatedButton(
-              onPressed: () => _simulateApiResponse('conhecido', 'Ciclano'),
-              child: Text('Simular Conhecido'),
-            ),
-            SizedBox(height: 10), // Espaçamento adicionado
-            ElevatedButton(
-              onPressed: () => _simulateApiResponse('desconhecido', 'Desconhecido'),
-              child: Text('Simular Desconhecido'),
-            ),*/
           ],
         ),
       ),
@@ -295,9 +253,45 @@ class _RegisterPersonScreenState extends State<RegisterPersonScreen> {
   final _nameController = TextEditingController();
   String _group = 'conhecido';
 
+  Future<void> _registerImage(File image, String nome, String status) async {
+    final url = Uri.parse('http://192.168.1.10:5000/register');
+    final request = http.MultipartRequest('POST', url)
+      ..files.add(await http.MultipartFile.fromPath('img', image.path))
+      ..fields['nome'] = nome
+      ..fields['status'] = status;
+
+    final response = await request.send();
+
+    if (response.statusCode == 201) {
+      final responseBody = await response.stream.bytesToString();
+      final jsonResponse = json.decode(responseBody);
+
+      _showRegisterSuccesDialog(nome);
+
+    } else {
+      // Handle error response
+    }
+  }
+
+  void _showRegisterSuccesDialog(String name) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('$name foi registrado'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: Text('Registrar Pessoa'),
       ),
@@ -345,6 +339,7 @@ class _RegisterPersonScreenState extends State<RegisterPersonScreen> {
                 onPressed: () {
                   if (_formKey.currentState!.validate()) {
                     // Lógica para registrar a pessoa
+                    _registerImage(widget.image, _nameController.text, _group);
                     Navigator.of(context).pop();
                   }
                 },

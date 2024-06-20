@@ -8,7 +8,7 @@ app = Flask(__name__)
 # Banco de dados simulado para pessoas cadastradas
 pessoas_cadastradas = [
     {'nome': 'Brad Pitt', 'img_ref': 'known_faces/pitt.jpg', 'status': 'morador'},
-    {'nome': 'Jason Momoa', 'img_ref': 'known_faces/momoa.jpg', 'status': 'visitante'}
+    {'nome': 'Jason Momoa', 'img_ref': 'known_faces/momoa.jpg', 'status': 'conhecido'}
 ]
 
 @app.route('/register', methods=['POST'])
@@ -50,9 +50,11 @@ def recognize_person():
             break
 
     if recognized_person:
+        print('pessoa: ')
+        print(recognized_person)
         return jsonify({
             "nome": recognized_person['nome'],
-            "status": recognized_person['status']
+            "status": recognized_person['status']            
         }), 200
     else:
         return jsonify({
