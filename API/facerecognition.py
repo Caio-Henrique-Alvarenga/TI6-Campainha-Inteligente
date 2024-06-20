@@ -6,6 +6,7 @@ import os
 import asyncio
 from celery import Celery
 import tensorflow as tf
+import concurrent.futures
 
 app = Flask(__name__)
 celery = Celery(app.name, broker='amqp://guest@localhost//')
@@ -64,18 +65,22 @@ def recognize_person_view():
 
     recognized_person = None
 
-    for pessoa in pessoas_cadastradas:
-        result = DeepFace.verify(img1_path=pessoa['img_ref'], img2_path=input_img_path)
-        if result['verified']:
-            recognized_person = pessoa
-            break
+    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+        futures = []
+        for pessoa in pessoas_cadastradas:
+            future = executor.submit(DeepFace.verify, img1_path=pessoa['img_ref'], img2_path=input_img_path)
+            futures.append(future)
+
+        for future in concurrent.futures.as_completed(futures):
+            result = future.result()
+            if result['verified']:
+                recognized_person = pessoa
+                break
 
     if recognized_person:
-        #print('pessoa: ')
-        #print(recognized_person)
         return jsonify({
             "nome": recognized_person['nome'],
-            "status": recognized_person['status']            
+            "status": recognized_person['status']
         }), 200
     else:
         return jsonify({
