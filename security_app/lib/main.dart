@@ -52,10 +52,9 @@ class _ImagePickerScreenState extends State<ImagePickerScreen> {
   }
 
   Future<void> _uploadImage(File image) async {
-    // Supondo que a URL da API seja 'http://suaapi.com/upload'
-    final url = Uri.parse('http://suaapi.com/upload');
+    final url = Uri.parse('http://127.0.0.1:5000/recognize');
     final request = http.MultipartRequest('POST', url)
-      ..files.add(await http.MultipartFile.fromPath('image', image.path));
+      ..files.add(await http.MultipartFile.fromPath('img', image.path));  // Mudança aqui
 
     final response = await request.send();
 
@@ -65,7 +64,7 @@ class _ImagePickerScreenState extends State<ImagePickerScreen> {
 
       if (jsonResponse['status'] == 'morador') {
         _showMoradorDialog(jsonResponse['nome']);
-      } else if (jsonResponse['status'] == 'conhecido') {
+      } else if (jsonResponse['status'] == 'visitante') {
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -89,6 +88,7 @@ class _ImagePickerScreenState extends State<ImagePickerScreen> {
       // Handle error response
     }
   }
+
 
   void _simulateApiResponse(String status, String name) {
     if (_image == null) {
@@ -159,7 +159,7 @@ class _ImagePickerScreenState extends State<ImagePickerScreen> {
               child: Text('Selecionar Imagem'),
             ),
             SizedBox(height: 20),
-            ElevatedButton(
+            /*ElevatedButton(
               onPressed: () => _simulateApiResponse('morador', 'Fulano'),
               child: Text('Simular Morador'),
             ),
@@ -172,7 +172,7 @@ class _ImagePickerScreenState extends State<ImagePickerScreen> {
             ElevatedButton(
               onPressed: () => _simulateApiResponse('desconhecido', 'Desconhecido'),
               child: Text('Simular Desconhecido'),
-            ),
+            ),*/
           ],
         ),
       ),
