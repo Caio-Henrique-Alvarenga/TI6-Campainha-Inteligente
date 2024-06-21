@@ -52,7 +52,7 @@ class _ImagePickerScreenState extends State<ImagePickerScreen> {
   }
 
   Future<void> _uploadImage(File image) async {
-    final url = Uri.parse('http://192.168.1.10:5000/recognize');
+    final url = Uri.parse('http://linkapi/recognize-person');
     final request = http.MultipartRequest('POST', url)
       ..files.add(await http.MultipartFile.fromPath('img', image.path));
 
@@ -254,7 +254,7 @@ class _RegisterPersonScreenState extends State<RegisterPersonScreen> {
   String _group = 'conhecido';
 
   Future<void> _registerImage(File image, String nome, String status) async {
-    final url = Uri.parse('http://192.168.1.10:5000/register');
+    final url = Uri.parse('http://linkapi/register-person');
     final request = http.MultipartRequest('POST', url)
       ..files.add(await http.MultipartFile.fromPath('img', image.path))
       ..fields['nome'] = nome
